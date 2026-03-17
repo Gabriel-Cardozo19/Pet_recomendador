@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.env
+venv/
+.env/
+.DS_Store
+Thumbs.db
+
+# archivos temporales
+*.tmp
+
+# si luego procesan archivos pesados
+data/processed/*.csv
