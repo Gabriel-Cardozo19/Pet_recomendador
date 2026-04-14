@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import streamlit as st
-import plotly.graph_objects as go
 
 # -----------------------------------
 # Configuración general
@@ -30,11 +29,90 @@ st.markdown(
         margin-bottom: 1rem;
     }
     .section-title {
-        font-size: 1.3rem;
+        font-size: 1.35rem;
         font-weight: 700;
         color: #F8FAFC;
         margin-top: 1rem;
         margin-bottom: 0.8rem;
+    }
+    .section-subtitle {
+        font-size: 0.95rem;
+        color: #CBD5E1;
+        margin-top: -0.2rem;
+        margin-bottom: 1rem;
+    }
+    .hero-box {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 18px;
+        padding: 20px;
+        margin-bottom: 18px;
+    }
+    .hero-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #F8FAFC;
+        margin-bottom: 8px;
+    }
+    .hero-text {
+        font-size: 1.03rem;
+        color: #E2E8F0;
+        line-height: 1.5;
+    }
+    .kpi-card {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 16px;
+        padding: 18px;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .kpi-label {
+        font-size: 0.9rem;
+        color: #CBD5E1;
+        margin-bottom: 6px;
+    }
+    .kpi-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #F8FAFC;
+        line-height: 1.1;
+    }
+    .kpi-badge {
+        border-radius: 14px;
+        padding: 18px;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+    .kpi-badge-title {
+        font-size: 0.95rem;
+        color: #CBD5E1;
+        margin-bottom: 8px;
+    }
+    .kpi-badge-value {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+    .kpi-badge-desc {
+        font-size: 0.92rem;
+        line-height: 1.3;
+    }
+    .info-box {
+        background-color: #EFF6FF;
+        border-left: 6px solid #2563EB;
+        padding: 16px;
+        border-radius: 12px;
+        color: #1E3A8A !important;
+        font-size: 1rem;
+        margin-bottom: 14px;
     }
     .big-card {
         background: linear-gradient(135deg, #EAF2FF, #F8FAFC);
@@ -46,6 +124,15 @@ st.markdown(
     }
     .big-card p, .big-card div, .big-card span, .big-card b {
         color: #102A43 !important;
+    }
+    .tag-box {
+        background-color: #FEFCE8;
+        border-left: 6px solid #CA8A04;
+        padding: 14px 16px;
+        border-radius: 12px;
+        color: #854D0E !important;
+        font-size: 1rem;
+        margin-bottom: 18px;
     }
     .card {
         background-color: #F8FAFC;
@@ -60,14 +147,24 @@ st.markdown(
     .card h4, .card p, .card div, .card span, .card b {
         color: #102A43 !important;
     }
-    .info-box {
-        background-color: #EFF6FF;
-        border-left: 6px solid #2563EB;
+    .action-card {
+        border-radius: 16px;
         padding: 16px;
-        border-radius: 12px;
-        color: #1E3A8A !important;
-        font-size: 1rem;
-        margin-bottom: 14px;
+        margin-bottom: 12px;
+        min-height: 185px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.20);
+    }
+    .action-card h4 {
+        color: #F8FAFC !important;
+        margin-bottom: 10px;
+    }
+    .action-card p {
+        color: #CBD5F5 !important;
+    }
+    .action-card .badge {
+        margin-top: 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
     }
     .insight-box {
         background-color: #ECFDF5;
@@ -78,12 +175,12 @@ st.markdown(
         font-size: 1rem;
         margin-bottom: 14px;
     }
-    .warn-box {
-        background-color: #FEFCE8;
-        border-left: 6px solid #CA8A04;
+    .secondary-box {
+        background-color: rgba(255,255,255,0.08);
+        border-left: 6px solid #94A3B8;
         padding: 16px;
         border-radius: 12px;
-        color: #854D0E !important;
+        color: #E2E8F0 !important;
         font-size: 1rem;
         margin-bottom: 14px;
     }
@@ -98,13 +195,13 @@ st.markdown(
 @st.cache_data
 def load_data():
     base_dir = os.path.dirname(os.path.dirname(__file__))
+    path = os.path.join(base_dir, "data", "processed", "cross_selling_features.csv")
 
-    path_main = os.path.join(base_dir, "data", "processed", "cross_selling_features.csv")
-    if not os.path.exists(path_main):
-        st.error(f"No se encontró el archivo: {path_main}")
+    if not os.path.exists(path):
+        st.error(f"No se encontró el archivo: {path}")
         st.stop()
 
-    return pd.read_csv(path_main)
+    return pd.read_csv(path)
 
 recomendaciones = load_data()
 
@@ -127,12 +224,13 @@ logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
 # -----------------------------------
 # Funciones auxiliares
 # -----------------------------------
-def clasificar_oportunidad(score: float) -> str:
-    if score >= 0.13:
+def clasificar_oportunidad_pct(valor_pct: float) -> str:
+    if valor_pct >= 70:
         return "Alta"
-    elif score >= 0.08:
+    elif valor_pct >= 40:
         return "Media"
     return "Baja"
+
 
 def descripcion_macrocategoria(grupo: str) -> str:
     descripciones = {
@@ -146,22 +244,68 @@ def descripcion_macrocategoria(grupo: str) -> str:
         "Industria y construcción": "Macrocategoría con productos más específicos y uso puntual.",
         "Marketplace": "Macrocategoría amplia y heterogénea dentro del catálogo.",
         "Cultura y entretenimiento": "Macrocategoría asociada a experiencias y ocio.",
+        "Viaje y accesorios": "Macrocategoría vinculada a movilidad, equipaje y uso complementario.",
         "other": "Macrocategoría residual con menor volumen histórico."
     }
     return descripciones.get(grupo, "Macrocategoría con comportamiento específico dentro del catálogo.")
 
+
 def insight_negocio(grupo_origen, grupo_recomendado):
     return (
-        f"Los clientes que compran en <b>{grupo_origen}</b> también muestran afinidad con <b>{grupo_recomendado}</b>, "
-        "lo que sugiere una oportunidad concreta para activar cross-selling y aumentar el ticket promedio."
+        f"Los clientes que compran en <b>{grupo_origen}</b> también muestran afinidad con "
+        f"<b>{grupo_recomendado}</b>, lo que sugiere una oportunidad concreta para activar "
+        "cross-selling y aumentar el ticket promedio."
     )
 
-def acciones_comerciales():
+
+def acciones_comerciales_contexto(grupo_origen, grupo_destino):
     return [
-        ("🛒 Bundle sugerido", "Combinar macrocategorías relacionadas para aumentar valor por compra."),
-        ("🎯 Sugerencia en checkout", "Mostrar oportunidades cruzadas durante la compra."),
-        ("📢 Campaña segmentada", "Activar promociones dirigidas según afinidad detectada.")
+        (
+            f"🛒 Bundle {grupo_origen} + {grupo_destino}",
+            f"Crear combos promocionales entre {grupo_origen} y {grupo_destino} para aumentar el ticket promedio.",
+            "Alta"
+        ),
+        (
+            "🎯 Cross-sell en checkout",
+            f"Recomendar {grupo_destino} cuando el cliente agrega productos de {grupo_origen}.",
+            "Media"
+        ),
+        (
+            "📢 Campaña segmentada",
+            f"Impactar clientes que compraron {grupo_origen} con ofertas de {grupo_destino}.",
+            "Media"
+        )
     ]
+
+
+def render_accion_card(titulo, desc, prioridad):
+    if prioridad == "Alta":
+        color = "#16A34A"
+        bg = "rgba(22,163,74,0.12)"
+        badge = "🔥 Alto impacto"
+    elif prioridad == "Media":
+        color = "#2563EB"
+        bg = "rgba(37,99,235,0.12)"
+        badge = "⚡ Quick win"
+    else:
+        color = "#64748B"
+        bg = "rgba(100,116,139,0.12)"
+        badge = "🧪 Testear"
+
+    return f"""
+    <div class="action-card" style="
+        border-left: 4px solid {color};
+        border: 1px solid {color};
+        background:{bg};
+    ">
+        <h4>{titulo}</h4>
+        <p>{desc}</p>
+        <div class="badge" style="color:{color};">
+            {badge}
+        </div>
+    </div>
+    """
+
 
 def fallback_popularidad(df, top_n=5):
     return (
@@ -176,29 +320,74 @@ def fallback_popularidad(df, top_n=5):
         })
     )
 
-def gauge_mini(valor_pct: float):
-    fig = go.Figure(go.Indicator(
-        mode="gauge",
-        value=valor_pct,
-        gauge={
-            "axis": {"range": [0, 100], "visible": False},
-            "bar": {"color": "#2563EB"},
-            "bgcolor": "white",
-            "steps": [
-                {"range": [0, 40], "color": "#FDE68A"},
-                {"range": [40, 70], "color": "#93C5FD"},
-                {"range": [70, 100], "color": "#86EFAC"}
-            ],
-        }
-    ))
 
-    fig.update_layout(
-        height=120,  # 👈 compacto
-        margin=dict(l=10, r=10, t=10, b=10),
-        paper_bgcolor="rgba(0,0,0,0)"
-    )
+def build_priority_badge(nivel_oportunidad: str, nivel_oportunidad_pct: float):
+    if nivel_oportunidad == "Alta":
+        color = "#16A34A"
+        bg = "rgba(22,163,74,0.12)"
+        desc = "Relación sólida para activar"
+    elif nivel_oportunidad == "Media":
+        color = "#2563EB"
+        bg = "rgba(37,99,235,0.12)"
+        desc = "Relación válida con oportunidad táctica"
+    else:
+        color = "#DC2626"
+        bg = "rgba(220,38,38,0.12)"
+        desc = "Relación limitada, requiere validación"
 
-    return fig
+    return f"""
+    <div class="kpi-badge" style="background:{bg}; border:1px solid {color};">
+        <div class="kpi-badge-title">Prioridad comercial</div>
+        <div class="kpi-badge-value" style="color:{color};">{nivel_oportunidad}</div>
+        <div class="kpi-badge-desc" style="color:{color};">{nivel_oportunidad_pct:.1f}% · {desc}</div>
+    </div>
+    """
+
+# -----------------------------------
+# Sidebar
+# -----------------------------------
+st.sidebar.header("Configuración del análisis")
+
+grupos = sorted(recomendaciones[col_origen].dropna().unique())
+grupo_seleccionado = st.sidebar.selectbox("Seleccionar macrocategoría analizada", grupos)
+top_k = st.sidebar.slider("Cantidad de oportunidades a visualizar", 3, 10, 5)
+
+# -----------------------------------
+# Filtrado
+# -----------------------------------
+df_grupo = (
+    recomendaciones[recomendaciones[col_origen] == grupo_seleccionado]
+    .sort_values(col_relevancia, ascending=False)
+    .head(top_k)
+    .copy()
+)
+
+MAX_RELEVANCIA = recomendaciones[col_relevancia].max()
+
+# -----------------------------------
+# Variables principales
+# -----------------------------------
+if not df_grupo.empty:
+    top = df_grupo.iloc[0]
+
+    mejor = top[col_reco]
+    mejor_freq = int(top[col_freq])
+    ticket_origen = float(top[col_ticket_origen])
+    ticket_destino = float(top[col_ticket_destino])
+    relevancia = float(top[col_relevancia])
+
+    impacto_pct = ((ticket_destino - ticket_origen) / ticket_origen) * 100 if ticket_origen > 0 else 0.0
+    nivel_oportunidad_pct = (relevancia / MAX_RELEVANCIA) * 100 if MAX_RELEVANCIA > 0 else 0.0
+    nivel_oportunidad = clasificar_oportunidad_pct(nivel_oportunidad_pct)
+else:
+    mejor = "-"
+    mejor_freq = 0
+    ticket_origen = 0.0
+    ticket_destino = 0.0
+    relevancia = 0.0
+    impacto_pct = 0.0
+    nivel_oportunidad_pct = 0.0
+    nivel_oportunidad = "-"
 
 # -----------------------------------
 # Header
@@ -222,90 +411,77 @@ with col_title:
 st.markdown("---")
 
 # -----------------------------------
-# Sidebar
-# -----------------------------------
-st.sidebar.header("Configuración del análisis")
-
-grupos = sorted(recomendaciones[col_origen].dropna().unique())
-grupo_seleccionado = st.sidebar.selectbox("Seleccionar macrocategoría analizada", grupos)
-top_k = st.sidebar.slider("Cantidad de oportunidades a visualizar", 3, 10, 5)
-
-# -----------------------------------
-# Filtrado
-# -----------------------------------
-df_grupo = (
-    recomendaciones[recomendaciones[col_origen] == grupo_seleccionado]
-    .sort_values(col_relevancia, ascending=False)
-    .head(top_k)
-    .copy()
-)
-
-# -----------------------------------
-# Variables principales
+# Insight clave
 # -----------------------------------
 if not df_grupo.empty:
-    top = df_grupo.iloc[0]
-
-    mejor = top[col_reco]
-    mejor_score = float(top[col_score])
-    mejor_freq = int(top[col_freq])
-    ticket_origen = float(top[col_ticket_origen])
-    ticket_destino = float(top[col_ticket_destino])
-    relevancia = float(top[col_relevancia])
-
-    nivel_oportunidad = clasificar_oportunidad(mejor_score)
-
-    impacto_pct = ((ticket_destino - ticket_origen) / ticket_origen) * 100 if ticket_origen > 0 else 0.0
-    nivel_oportunidad_pct = min(relevancia, 100)
-
-    score_promedio = float(df_grupo[col_score].mean())
-else:
-    mejor = "-"
-    mejor_score = 0.0
-    mejor_freq = 0
-    ticket_origen = 0.0
-    ticket_destino = 0.0
-    relevancia = 0.0
-    impacto_pct = 0.0
-    nivel_oportunidad_pct = 0.0
-    nivel_oportunidad = "-"
-    score_promedio = 0.0
-
-# -----------------------------------
-# Resumen ejecutivo
-# -----------------------------------
-st.markdown('<div class="section-title">Resumen ejecutivo</div>', unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric("Macrocategoría analizada", grupo_seleccionado)
-
-with col2:
-    st.metric("Principal categoría asociada", mejor)
-
-with col3:
-    st.markdown("Nivel de oportunidad")
-    st.plotly_chart(gauge_mini(nivel_oportunidad_pct), use_container_width=True)
-
-    # 🎨 Color dinámico según nivel
     if nivel_oportunidad == "Alta":
-        color = "#16A34A"   # verde
+        insight_line = (
+            f"Los clientes de <b>{grupo_seleccionado}</b> muestran una asociación sólida con "
+            f"<b>{mejor}</b>. Recomendación prioritaria para activar."
+        )
     elif nivel_oportunidad == "Media":
-        color = "#2563EB"   # azul
+        insight_line = (
+            f"Detectamos una asociación relevante entre <b>{grupo_seleccionado}</b> y "
+            f"<b>{mejor}</b>. Oportunidad táctica para testear activación."
+        )
     else:
-        color = "#DC2626"   # rojo
+        insight_line = (
+            f"<b>{grupo_seleccionado}</b> se relaciona con <b>{mejor}</b>, pero con baja prioridad "
+            f"comercial. Conviene validar antes de escalar."
+        )
 
     st.markdown(
-        f"<div style='text-align:center; font-weight:600; color:{color}; font-size:1.3rem; letter-spacing:0.5px;'>"
-        f"{nivel_oportunidad}</div>",
+        f"""
+        <div class="hero-box">
+            <div class="hero-title">💡 Insight clave</div>
+            <div class="hero-text">{insight_line}</div>
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
 # -----------------------------------
-# Relación comercial detectada
+# Lectura rápida
 # -----------------------------------
-st.markdown("### Relación comercial detectada")
+st.markdown('<div class="section-title">Lectura rápida</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="section-subtitle">Lo más importante para entender esta oportunidad en segundos.</div>',
+    unsafe_allow_html=True
+)
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Macrocategoría analizada</div>
+            <div class="kpi-value">{grupo_seleccionado}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with col2:
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Principal categoría asociada</div>
+            <div class="kpi-value">{mejor}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with col3:
+    st.markdown(build_priority_badge(nivel_oportunidad, nivel_oportunidad_pct), unsafe_allow_html=True)
+
+st.markdown("---")
+
+# -----------------------------------
+# Qué está pasando
+# -----------------------------------
+st.markdown("### Qué está pasando")
 st.markdown(
     f"""
     <div class="info-box">
@@ -316,55 +492,72 @@ st.markdown(
 )
 
 # -----------------------------------
-# Oportunidad principal sugerida
+# Qué recomendamos hacer
 # -----------------------------------
 if not df_grupo.empty:
     st.markdown(
         f"""
         <div class="big-card">
-            <div class="section-title" style="color:#102A43;">Oportunidad principal sugerida</div>
-            <p>Para la macrocategoría <b>{grupo_seleccionado}</b>, la principal categoría asociada es <b>{mejor}</b>.</p>
-            <p><b>Nivel de oportunidad:</b> {nivel_oportunidad}</p>
+            <div class="section-title" style="color:#102A43;">Qué recomendamos hacer</div>
+            <p>Para la macrocategoría <b>{grupo_seleccionado}</b>, la mejor asociación detectada es <b>{mejor}</b>.</p>
             <p><b>Compras conjuntas observadas:</b> {mejor_freq}</p>
-            <p><b>Incremento potencial estimado:</b> {impacto_pct:+.1f}%</p>
+            <p><b>Potencial de incremento estimado:</b> {impacto_pct:+.1f}%</p>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    st.markdown(
-        f"""
-        <div class="warn-box">
-        <b>Potencial de activación:</b> {nivel_oportunidad_pct:.1f}%
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    if impacto_pct >= 50 and nivel_oportunidad == "Baja":
+        st.markdown(
+            """
+            <div class="tag-box">
+            <b>Atención:</b> el potencial de incremento es alto, pero la prioridad comercial es baja.
+            Se recomienda validar esta activación antes de escalarla.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            f"""
+            <div class="tag-box">
+            <b>Potencial estimado de activación:</b> {nivel_oportunidad_pct:.1f}%
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 else:
     st.warning("No se encontraron oportunidades para esta macrocategoría.")
 
 # -----------------------------------
-# Principales oportunidades sugeridas
+# Principales categorías asociadas
 # -----------------------------------
 st.markdown('<div class="section-title">Principales categorías asociadas</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="section-subtitle">Relaciones detectadas para esta macrocategoría, ordenadas por prioridad.</div>',
+    unsafe_allow_html=True
+)
 
 if df_grupo.empty:
     st.warning("No se encontraron oportunidades para esta macrocategoría.")
 else:
-    card_cols = st.columns(min(3, len(df_grupo)))
+    card_cols = st.columns(min(3, len(df_grupo.head(3))))
 
-    for idx, (_, row) in enumerate(df_grupo.head(3).iterrows()):
+    for col, (i, (_, row)) in zip(card_cols, enumerate(df_grupo.head(3).iterrows(), start=1)):
         impacto_card = (
             ((float(row[col_ticket_destino]) - float(row[col_ticket_origen])) / float(row[col_ticket_origen])) * 100
             if float(row[col_ticket_origen]) > 0 else 0.0
         )
+        relevancia_card = float(row[col_relevancia])
+        nivel_card_pct = (relevancia_card / MAX_RELEVANCIA) * 100 if MAX_RELEVANCIA > 0 else 0.0
+        nivel_card = clasificar_oportunidad_pct(nivel_card_pct)
 
-        with card_cols[idx]:
+        with col:
             st.markdown(
                 f"""
                 <div class="card">
-                    <h4>{row[col_reco]}</h4>
-                    <p><b>Nivel de oportunidad:</b> {clasificar_oportunidad(float(row[col_score]))}</p>
+                    <h4>#{i} {row[col_reco]}</h4>
+                    <p><b>Prioridad:</b> {nivel_card}</p>
                     <p><b>Compras conjuntas:</b> {int(row[col_freq])}</p>
                     <p><b>Incremento estimado:</b> {impacto_card:+.1f}%</p>
                 </div>
@@ -373,30 +566,33 @@ else:
             )
 
 # -----------------------------------
-# Sugerencias de activación + detalle
+# Sugerencias de activación + análisis técnico
 # -----------------------------------
 left, right = st.columns([1.4, 0.8])
 
 with left:
     st.markdown('<div class="section-title">Sugerencias de activación</div>', unsafe_allow_html=True)
-    acciones = acciones_comerciales()
+    st.markdown(
+        '<div class="section-subtitle">Acciones concretas para capturar esta oportunidad.</div>',
+        unsafe_allow_html=True
+    )
+
+    acciones = acciones_comerciales_contexto(grupo_seleccionado, mejor)
     cols_acc = st.columns(3)
 
-    for col, (titulo, desc) in zip(cols_acc, acciones):
+    for col, (titulo, desc, prioridad) in zip(cols_acc, acciones):
         with col:
             st.markdown(
-                f"""
-                <div class="card">
-                    <h4>{titulo}</h4>
-                    <p>{desc}</p>
-                </div>
-                """,
+                render_accion_card(titulo, desc, prioridad),
                 unsafe_allow_html=True
             )
 
 with right:
-    st.markdown('<div class="section-title">Detalle de asociaciones</div>', unsafe_allow_html=True)
-    st.caption("Vista de respaldo para análisis técnico.")
+    st.markdown('<div class="section-title">Análisis técnico</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-subtitle">Detalle de respaldo para profundizar la relación detectada.</div>',
+        unsafe_allow_html=True
+    )
 
     if not df_grupo.empty:
         tabla = df_grupo[[col_reco, col_freq, col_ticket_origen, col_ticket_destino, col_score, col_relevancia]].rename(columns={
@@ -405,19 +601,19 @@ with right:
             col_ticket_origen: "Ticket origen",
             col_ticket_destino: "Ticket destino",
             col_score: "Score",
-            col_relevancia: "Nivel de oportunidad (%)"
+            col_relevancia: "Relevancia"
         })
 
         tabla["Ticket origen"] = tabla["Ticket origen"].apply(lambda x: f"${x:,.2f}")
         tabla["Ticket destino"] = tabla["Ticket destino"].apply(lambda x: f"${x:,.2f}")
         tabla["Score"] = tabla["Score"].apply(lambda x: f"{x:.4f}")
-        tabla["Nivel de oportunidad (%)"] = tabla["Nivel de oportunidad (%)"].apply(lambda x: f"{x:.1f}%")
+        tabla["Relevancia"] = tabla["Relevancia"].apply(lambda x: f"{x:.2f}")
 
         with st.expander("Ver detalle técnico (opcional)", expanded=False):
-            st.dataframe(tabla, use_container_width=True, height=220)
+            st.dataframe(tabla, width="stretch", height=250)
 
 # -----------------------------------
-# Por qué esta relación importa
+# Por qué importa
 # -----------------------------------
 st.markdown("### ¿Por qué esta asociación importa?")
 
@@ -431,16 +627,83 @@ if not df_grupo.empty:
         unsafe_allow_html=True
     )
 
-    if score_promedio >= 0.13:
-        st.success("La oportunidad detectada muestra una afinidad comercial alta dentro del catálogo.")
-    elif score_promedio >= 0.08:
-        st.info("La oportunidad detectada presenta una afinidad comercial moderada y puede activarse tácticamente.")
+    if nivel_oportunidad == "Alta":
+        st.markdown(
+            """
+            <div class="secondary-box">
+            Esta oportunidad tiene una prioridad alta y puede integrarse directamente en acciones comerciales.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    elif nivel_oportunidad == "Media":
+        st.markdown(
+            """
+            <div class="secondary-box">
+            Esta oportunidad tiene potencial táctico y puede probarse con activaciones puntuales.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     else:
-        st.warning("La oportunidad detectada es más limitada y conviene validarla antes de una activación amplia.")
+        st.markdown(
+            """
+            <div class="secondary-box">
+            Esta oportunidad es más limitada y conviene validarla antes de una activación amplia.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-    st.markdown("### Nivel de oportunidad")
-    st.metric("Potencial estimado", f"{nivel_oportunidad_pct:.1f}%")
-    st.progress(nivel_oportunidad_pct / 100)
+# -----------------------------------
+# Potencial estimado
+# -----------------------------------
+if nivel_oportunidad_pct >= 70:
+    color = "#16A34A"
+    desc = "Alta probabilidad de activación comercial"
+elif nivel_oportunidad_pct >= 40:
+    color = "#2563EB"
+    desc = "Oportunidad táctica con potencial de prueba"
+else:
+    color = "#DC2626"
+    desc = "Potencial limitado, conviene validar"
+
+st.markdown(
+    f"""
+    <div style="
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 16px;
+        padding: 18px;
+        margin-bottom: 10px;
+    ">
+        <div style="font-size:0.92rem; color:#CBD5E1; margin-bottom:6px;">
+            Potencial estimado
+        </div>
+        <div style="font-size:2.2rem; font-weight:700; color:{color}; line-height:1.1; margin-bottom:8px;">
+            {nivel_oportunidad_pct:.1f}%
+        </div>
+        <div style="font-size:0.95rem; color:#E2E8F0; margin-bottom:12px;">
+            {desc}
+        </div>
+        <div style="
+            width:100%;
+            height:10px;
+            background: rgba(255,255,255,0.12);
+            border-radius:999px;
+            overflow:hidden;
+        ">
+            <div style="
+                width:{nivel_oportunidad_pct:.1f}%;
+                height:100%;
+                background:{color};
+                border-radius:999px;
+            "></div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # -----------------------------------
 # Fallback
@@ -448,10 +711,10 @@ if not df_grupo.empty:
 if df_grupo.empty:
     st.markdown("### Alternativa por volumen histórico")
     fallback = fallback_popularidad(recomendaciones, top_n=5)
-    st.dataframe(fallback, use_container_width=True)
+    st.dataframe(fallback, width="stretch")
 
 # -----------------------------------
-# Footer simple
+# Footer
 # -----------------------------------
 st.markdown("---")
 st.caption("Proyecto Webshop · Sprint 2 · CSCM Consulting Group")
