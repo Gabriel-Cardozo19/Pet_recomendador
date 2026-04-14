@@ -97,13 +97,13 @@ st.markdown(
 @st.cache_data
 def load_data():
     base_dir = os.path.dirname(os.path.dirname(__file__))
-    path = os.path.join(base_dir, "data", "processed", "recomendaciones_modelo.csv")
 
-    if not os.path.exists(path):
-        st.error(f"No se encontró el archivo: {path}")
+    path_main = os.path.join(base_dir, "data", "processed", "cross_selling_features.csv")
+    if not os.path.exists(path_main):
+        st.error(f"No se encontró el archivo: {path_main}")
         st.stop()
 
-    return pd.read_csv(path)
+    return pd.read_csv(path_main)
 
 recomendaciones = load_data()
 
@@ -112,9 +112,11 @@ recomendaciones = load_data()
 # -----------------------------------
 col_origen = "grupo_a"
 col_reco = "grupo_b"
-col_score = "score"
 col_freq = "frecuencia"
-col_ticket = "ticket_grupo_b"
+col_ticket_origen = "ticket_grupo_a"
+col_ticket_destino = "ticket_grupo_b"
+col_score = "score"
+col_relevancia = "relevancia"
 
 # -----------------------------------
 # Logo
@@ -130,13 +132,6 @@ def clasificar_oportunidad(score: float) -> str:
     elif score >= 0.08:
         return "Media"
     return "Baja"
-
-def clasificar_potencial(ticket: float) -> str:
-    if ticket >= 130:
-        return "Alto potencial comercial"
-    elif ticket >= 110:
-        return "Potencial comercial moderado"
-    return "Potencial comercial acotado"
 
 def descripcion_macrocategoria(grupo: str) -> str:
     descripciones = {
@@ -215,7 +210,7 @@ top_k = st.sidebar.slider("Cantidad de oportunidades a visualizar", 3, 10, 5)
 # -----------------------------------
 df_grupo = (
     recomendaciones[recomendaciones[col_origen] == grupo_seleccionado]
-    .sort_values(col_score, ascending=False)
+    .sort_values(col_relevancia, ascending=False)
     .head(top_k)
     .copy()
 )
@@ -224,21 +219,31 @@ df_grupo = (
 # Variables principales
 # -----------------------------------
 if not df_grupo.empty:
-    mejor = df_grupo.iloc[0][col_reco]
-    mejor_score = float(df_grupo.iloc[0][col_score])
-    mejor_freq = int(df_grupo.iloc[0][col_freq])
-    mejor_ticket = float(df_grupo.iloc[0][col_ticket])
+    top = df_grupo.iloc[0]
+
+    mejor = top[col_reco]
+    mejor_score = float(top[col_score])
+    mejor_freq = int(top[col_freq])
+    ticket_origen = float(top[col_ticket_origen])
+    ticket_destino = float(top[col_ticket_destino])
+    relevancia = float(top[col_relevancia])
 
     nivel_oportunidad = clasificar_oportunidad(mejor_score)
-    potencial = clasificar_potencial(mejor_ticket)
+
+    impacto_pct = ((ticket_destino - ticket_origen) / ticket_origen) * 100 if ticket_origen > 0 else 0.0
+    nivel_oportunidad_pct = min(relevancia, 100)
+
     score_promedio = float(df_grupo[col_score].mean())
 else:
     mejor = "-"
     mejor_score = 0.0
     mejor_freq = 0
-    mejor_ticket = 0.0
+    ticket_origen = 0.0
+    ticket_destino = 0.0
+    relevancia = 0.0
+    impacto_pct = 0.0
+    nivel_oportunidad_pct = 0.0
     nivel_oportunidad = "-"
-    potencial = "-"
     score_promedio = 0.0
 
 # -----------------------------------
@@ -283,7 +288,7 @@ if not df_grupo.empty:
             <p>Para la macrocategoría <b>{grupo_seleccionado}</b>, la principal categoría asociada es <b>{mejor}</b>.</p>
             <p><b>Nivel de oportunidad:</b> {nivel_oportunidad}</p>
             <p><b>Compras conjuntas observadas:</b> {mejor_freq}</p>
-            <p><b>Impacto económico estimado:</b> ${mejor_ticket:,.2f}</p>
+            <p><b>Incremento potencial estimado:</b> {impacto_pct:+.1f}%</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -292,7 +297,7 @@ if not df_grupo.empty:
     st.markdown(
         f"""
         <div class="warn-box">
-        <b>{potencial}</b>
+        <b>Potencial de activación:</b> {nivel_oportunidad_pct:.1f}%
         </div>
         """,
         unsafe_allow_html=True
@@ -311,6 +316,11 @@ else:
     card_cols = st.columns(min(3, len(df_grupo)))
 
     for idx, (_, row) in enumerate(df_grupo.head(3).iterrows()):
+        impacto_card = (
+            ((float(row[col_ticket_destino]) - float(row[col_ticket_origen])) / float(row[col_ticket_origen])) * 100
+            if float(row[col_ticket_origen]) > 0 else 0.0
+        )
+
         with card_cols[idx]:
             st.markdown(
                 f"""
@@ -318,19 +328,19 @@ else:
                     <h4>{row[col_reco]}</h4>
                     <p><b>Nivel de oportunidad:</b> {clasificar_oportunidad(float(row[col_score]))}</p>
                     <p><b>Compras conjuntas:</b> {int(row[col_freq])}</p>
-                    <p><b>Ticket promedio:</b> ${float(row[col_ticket]):,.2f}</p>
+                    <p><b>Incremento estimado:</b> {impacto_card:+.1f}%</p>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
 # -----------------------------------
-# Aplicación comercial + detalle
+# Sugerencias de activación + detalle
 # -----------------------------------
 left, right = st.columns([1.4, 0.8])
 
 with left:
-    st.markdown('<div class="section-title">Aplicación comercial</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Sugerencias de activación</div>', unsafe_allow_html=True)
     acciones = acciones_comerciales()
     cols_acc = st.columns(3)
 
@@ -351,15 +361,19 @@ with right:
     st.caption("Vista de respaldo para análisis técnico.")
 
     if not df_grupo.empty:
-        tabla = df_grupo[[col_reco, col_score, col_freq, col_ticket]].rename(columns={
+        tabla = df_grupo[[col_reco, col_freq, col_ticket_origen, col_ticket_destino, col_score, col_relevancia]].rename(columns={
             col_reco: "Macrocategoría sugerida",
-            col_score: "Fuerza de relación",
             col_freq: "Compras conjuntas",
-            col_ticket: "Impacto económico ($)"
+            col_ticket_origen: "Ticket origen",
+            col_ticket_destino: "Ticket destino",
+            col_score: "Score",
+            col_relevancia: "Nivel de oportunidad (%)"
         })
 
-        tabla["Impacto económico ($)"] = tabla["Impacto económico ($)"].apply(lambda x: f"${x:,.2f}")
-        tabla["Fuerza de relación"] = tabla["Fuerza de relación"].apply(lambda x: f"{x:.4f}")
+        tabla["Ticket origen"] = tabla["Ticket origen"].apply(lambda x: f"${x:,.2f}")
+        tabla["Ticket destino"] = tabla["Ticket destino"].apply(lambda x: f"${x:,.2f}")
+        tabla["Score"] = tabla["Score"].apply(lambda x: f"{x:.4f}")
+        tabla["Nivel de oportunidad (%)"] = tabla["Nivel de oportunidad (%)"].apply(lambda x: f"{x:.1f}%")
 
         with st.expander("Ver detalle técnico (opcional)", expanded=False):
             st.dataframe(tabla, use_container_width=True, height=220)
@@ -387,7 +401,8 @@ if not df_grupo.empty:
         st.warning("La oportunidad detectada es más limitada y conviene validarla antes de una activación amplia.")
 
     st.markdown("### Nivel de oportunidad")
-    st.progress(min(mejor_score / 0.20, 1.0))
+    st.metric("Potencial estimado", f"{nivel_oportunidad_pct:.1f}%")
+    st.progress(nivel_oportunidad_pct / 100)
 
 # -----------------------------------
 # Fallback
@@ -398,32 +413,7 @@ if df_grupo.empty:
     st.dataframe(fallback, use_container_width=True)
 
 # -----------------------------------
-# Aporte y próximos pasos
+# Footer simple
 # -----------------------------------
-st.markdown("---")
-colA, colB = st.columns(2)
-
-with colA:
-    st.markdown("## ¿Qué aporta esta herramienta?")
-    st.markdown(
-        """
-        Permite transformar datos históricos en oportunidades concretas de cross-selling, ayudando a:
-        - identificar combinaciones con mayor potencial comercial
-        - priorizar acciones para aumentar el ticket promedio
-        - sostener decisiones con evidencia del comportamiento de compra
-        """
-    )
-
-with colB:
-    st.markdown("## Próximos pasos")
-    st.markdown(
-        """
-        Como evolución del proyecto, el sistema puede avanzar hacia:
-        - recomendaciones más granulares
-        - mayor nivel de personalización
-        - integración con otras capas de activación comercial
-        """
-    )
-
 st.markdown("---")
 st.caption("Proyecto Webshop · Sprint 2 · CSCM Consulting Group")
