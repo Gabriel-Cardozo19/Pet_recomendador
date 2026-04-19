@@ -11,13 +11,13 @@ Proyecto de ciencia de datos enfocado en el desarrollo de un sistema de recomend
 
 ---
 
-## 🖥️ App Preview
+## App Preview
 
 ![App Preview](images/app_preview.png)
 
 ---
 
-## 💡 Business Problem
+## Business Problem
 
 La plataforma no cuenta con un sistema que sugiera productos complementarios entre categorías relacionadas, lo que limita las oportunidades de venta cruzada y el incremento del ticket promedio.
 
@@ -85,7 +85,7 @@ El modelo prioriza la cobertura de oportunidades, funcionando como un MVP funcio
 
 ---
 
-## 📌 Conclusion
+## Conclusion
 
 El sistema desarrollado permite generar recomendaciones basadas en datos reales de compra, integrando frecuencia y valor económico.
 
