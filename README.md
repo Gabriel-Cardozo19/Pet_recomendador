@@ -13,7 +13,7 @@ Proyecto de ciencia de datos enfocado en el desarrollo de un sistema de recomend
 
 ## App Preview
 
-![App Preview](images/app_preview.png)
+![App Preview](images/app.preview.png)
 
 ---
 
